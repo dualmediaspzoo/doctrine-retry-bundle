@@ -5,12 +5,8 @@ namespace DualMedia\DoctrineRetryBundle\Tests\Unit;
 use DualMedia\DoctrineRetryBundle\Storage;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Depends;
-use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 
-#[Group('unit')]
-#[Group('common')]
-#[Group('orm')]
 #[CoversClass(Storage::class)]
 class StorageTest extends TestCase
 {
