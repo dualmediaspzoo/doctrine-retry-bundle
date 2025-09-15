@@ -1,0 +1,158 @@
+name: Validate push
+on: [pull_request]
+
+jobs:
+  install:
+    strategy:
+      matrix:
+        include:
+          - symfony-version: 6.4
+            php-version: 8.3
+          - symfony-version: 7.2
+            php-version: 8.4
+
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Cache composer dependencies
+        uses: actions/cache@v3
+        with:
+          path: vendor/
+          key: ${{ runner.os }}-composer-s-${{ hashFiles('**/composer.lock') }}-${{ matrix.symfony-version }}-${{ matrix.php-version }}
+          restore-keys: |
+            ${{ runner.os }}-composer-s-${{ hashFiles('**/composer.lock') }}-${{ matrix.symfony-version }}-${{ matrix.php-version }}
+
+      - name: PHP Setup
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          ini-values: pcov.directory=.
+          coverage: pcov
+          tools: composer
+
+      - name: Setup flex
+        run: |
+          composer global require --no-progress --no-scripts --no-plugins symfony/flex && composer global config --no-plugins allow-plugins.symfony/flex true
+
+      - name: Install
+        env:
+          SYMFONY_REQUIRE: ${{ matrix.symfony-version }}
+        run: |
+          composer install --no-interaction --no-scripts --ansi --no-progress --prefer-dist
+
+  phpstan:
+    strategy:
+      matrix:
+        include:
+          - symfony-version: 6.4
+            php-version: 8.3
+
+    runs-on: ubuntu-latest
+    needs: install
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Cache composer dependencies
+        uses: actions/cache@v3
+        with:
+          path: vendor/
+          key: ${{ runner.os }}-composer-s-${{ hashFiles('**/composer.lock') }}-${{ matrix.symfony-version }}-${{ matrix.php-version }}
+          restore-keys: |
+            ${{ runner.os }}-composer-s-${{ hashFiles('**/composer.lock') }}-${{ matrix.symfony-version }}-${{ matrix.php-version }}
+
+      - name: PHP Setup
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          ini-values: pcov.directory=.
+          coverage: pcov
+          tools: composer
+
+      - name: PHPStan
+        run: |
+          vendor/bin/phpstan --ansi --no-progress
+
+  php-cs-fixer:
+    strategy:
+      matrix:
+        include:
+          - symfony-version: 6.4
+            php-version: 8.3
+
+    runs-on: ubuntu-latest
+    needs: install
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Cache composer dependencies
+        uses: actions/cache@v3
+        with:
+          path: vendor/
+          key: ${{ runner.os }}-composer-s-${{ hashFiles('**/composer.lock') }}-${{ matrix.symfony-version }}-${{ matrix.php-version }}
+          restore-keys: |
+            ${{ runner.os }}-composer-s-${{ hashFiles('**/composer.lock') }}-${{ matrix.symfony-version }}-${{ matrix.php-version }}
+
+      - name: PHP Setup
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          ini-values: pcov.directory=.
+          coverage: pcov
+          tools: composer
+
+      - name: PHP-CS-Fixer
+        run: |
+          vendor/bin/php-cs-fixer fix --config ./.php-cs-fixer.dist.php --dry-run --diff --ansi
+
+  test:
+    strategy:
+      matrix:
+        include:
+          - symfony-version: 6.4
+            php-version: 8.3
+          - symfony-version: 7.2
+            php-version: 8.4
+
+    runs-on: ubuntu-latest
+    needs:
+      - phpstan
+      - php-cs-fixer
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Cache composer dependencies
+        uses: actions/cache@v3
+        with:
+          path: vendor/
+          key: ${{ runner.os }}-composer-s-${{ hashFiles('**/composer.lock') }}-${{ matrix.symfony-version }}-${{ matrix.php-version }}
+          restore-keys: |
+            ${{ runner.os }}-composer-s-${{ hashFiles('**/composer.lock') }}-${{ matrix.symfony-version }}-${{ matrix.php-version }}
+
+      - name: PHP Setup
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          ini-values: pcov.directory=.
+          coverage: pcov
+          tools: composer
+
+      - name: PHPUnit
+        run: |
+          vendor/bin/phpunit --coverage-cobertura artifacts/code-coverage-cobertura.xml
+
+      - name: Code Coverage Report
+        uses: irongut/CodeCoverageSummary@v1.3.0
+        with:
+          filename: artifacts/code-coverage-cobertura.xml
+          badge: true
+          fail_below_min: true
+          format: markdown
+          hide_branch_rate: false
+          hide_complexity: true
+          indicators: true
+          output: both
+          thresholds: '3 70' # for now it's whatever, we're working on it
