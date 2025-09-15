@@ -1,0 +1,23 @@
+includes:
+  - vendor/spaze/phpstan-disallowed-calls/extension.neon
+  - vendor/spaze/phpstan-disallowed-calls/disallowed-dangerous-calls.neon
+  - vendor/spaze/phpstan-disallowed-calls/disallowed-execution-calls.neon
+
+parameters:
+  disallowedFunctionCalls:
+    -
+      function: 'gettype()'
+    -
+      function: 'dump()'
+    -
+      function: 'dd()'
+    -
+      function: 'var_dump()'
+    -
+      function: 'sizeof()'
+
+  reportUnmatchedIgnoredErrors: false
+  level: 7
+  paths:
+    - src
+    - tests
