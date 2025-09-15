@@ -1,0 +1,21 @@
+{
+    "name": "dualmedia/doctrine-retry-bundle",
+    "description": "Bundle for easy access to retryable doctrine transactions",
+    "type": "symfony-bundle",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "DualMedia\\DoctrineRetryBundle\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "pkly"
+        }
+    ],
+    "minimum-stability": "stable",
+    "require": {
+        "php": "^8.3",
+        "doctrine/orm": "^2 || ^3"
+    }
+}
