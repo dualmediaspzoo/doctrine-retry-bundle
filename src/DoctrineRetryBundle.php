@@ -39,6 +39,9 @@ class DoctrineRetryBundle extends AbstractBundle
 
         $loader->load('services.php');
 
-        $builder->setParameter('.dualmedia.doctrine_retry.track_nesting', $config['track_nesting']);
+        $services = $container->services();
+
+        $services->get(Retrier::class)
+            ->arg('$trackNesting', $config['track_nesting']);
     }
 }
