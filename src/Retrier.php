@@ -73,7 +73,7 @@ class Retrier
 
                 usleep($retries * $sleepMilliseconds * 1000);
             } catch (\Exception $e) {
-                $this->logger?->error('[RetryService] An exception has occurred', ['exception' => $e]);
+                $this->logger?->error('[Retrier] An exception has occurred', ['exception' => $e]);
                 self::$nesting--;
 
                 throw $e;
