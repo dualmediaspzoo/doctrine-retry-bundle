@@ -49,6 +49,7 @@ class Retrier
 
         $storage = new Storage();
         $retries = 0;
+        $success = false;
 
         do {
             /** @var EntityManagerInterface $em */
@@ -66,6 +67,7 @@ class Retrier
                 self::$nesting--;
 
                 $rollback = false;
+                $success = true;
 
                 return $ret;
             } catch (RetryableException $e) {
@@ -86,7 +88,7 @@ class Retrier
 
                 throw $e;
             } finally {
-                $this->eventDispatcher->dispatch(new TransactionFinalizedEvent($rollback, $retries, $em));
+                $this->eventDispatcher->dispatch(new TransactionFinalizedEvent($success, $rollback, $retries, $em));
 
                 if ($rollback) {
                     $em->close();

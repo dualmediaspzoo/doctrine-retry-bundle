@@ -9,6 +9,7 @@ class TransactionFinalizedEvent extends Event
 {
     public function __construct(
         public readonly bool $success,
+        public readonly bool $rollback,
         public readonly int $attempt,
         public readonly EntityManagerInterface $em,
     ) {
