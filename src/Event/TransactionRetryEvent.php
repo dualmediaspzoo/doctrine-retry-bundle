@@ -8,7 +8,7 @@ use Symfony\Contracts\EventDispatcher\Event;
 class TransactionRetryEvent extends Event
 {
     public function __construct(
-        public readonly \Exception $exception,
+        public readonly \Throwable $exception,
         public readonly int $attempt,
         public readonly EntityManagerInterface $em
     ) {
