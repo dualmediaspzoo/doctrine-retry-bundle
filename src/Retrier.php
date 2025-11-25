@@ -22,8 +22,8 @@ class Retrier
 
     public function __construct(
         private readonly ManagerRegistry $registry,
-        private readonly LoggerInterface|null $logger = null,
         private readonly EventDispatcherInterface $eventDispatcher,
+        private readonly LoggerInterface|null $logger = null,
         private readonly bool $trackNesting = false
     ) {
     }
