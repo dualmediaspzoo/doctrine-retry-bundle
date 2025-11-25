@@ -5,6 +5,10 @@ namespace DualMedia\DoctrineRetryBundle;
 use Doctrine\DBAL\Exception\RetryableException;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\Persistence\ManagerRegistry;
+use DualMedia\DoctrineRetryBundle\Event\RetryEvent;
+use DualMedia\DoctrineRetryBundle\Event\TransactionFailedEvent;
+use DualMedia\DoctrineRetryBundle\Event\TransactionFinishedEvent;
+use Psr\EventDispatcher\EventDispatcherInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -19,6 +23,7 @@ class Retrier
     public function __construct(
         private readonly ManagerRegistry $registry,
         private readonly LoggerInterface|null $logger = null,
+        private readonly EventDispatcherInterface $eventDispatcher,
         private readonly bool $trackNesting = false
     ) {
     }
@@ -70,11 +75,14 @@ class Retrier
 
                 $retries++;
                 $rollback = false;
+                $this->eventDispatcher->dispatch(new RetryEvent($e, $retries));
 
                 usleep($retries * $sleepMilliseconds * 1000);
             } catch (\Exception $e) {
                 $this->logger?->error('[Retrier] An exception has occurred', ['exception' => $e]);
                 self::$nesting--;
+
+                $this->eventDispatcher->dispatch(new TransactionFailedEvent($retries));
 
                 throw $e;
             } finally {
@@ -87,10 +95,14 @@ class Retrier
                         $connection->rollback();
                     }
                 }
+
+                $this->eventDispatcher->dispatch(new TransactionFinishedEvent($retries));
             }
         } while ($retries < 10);
 
         self::$nesting--;
+
+        $this->eventDispatcher->dispatch(new TransactionFailedEvent($retries));
 
         throw $e;
     }
