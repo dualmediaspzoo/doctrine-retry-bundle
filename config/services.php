@@ -12,7 +12,7 @@ return static function (ContainerConfigurator $configurator) {
 
     $services->set(\DualMedia\DoctrineRetryBundle\Retrier::class)
         ->arg('$registry', new Reference(\Doctrine\Persistence\ManagerRegistry::class))
-        ->arg('$eventDispatcher', new Reference(\Psr\EventDispatcher\EventDispatcherInterface::class))
+        ->arg('$eventDispatcher', new Reference(Symfony\Contracts\EventDispatcher\EventDispatcherInterface::class))
         ->arg('$logger', new Reference('logger', ContainerInterface::NULL_ON_INVALID_REFERENCE))
         ->arg('$trackNesting', new AbstractArgument('Will be set via bundle configuration'));
 };

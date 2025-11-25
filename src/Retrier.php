@@ -8,8 +8,8 @@ use Doctrine\Persistence\ManagerRegistry;
 use DualMedia\DoctrineRetryBundle\Event\RetryEvent;
 use DualMedia\DoctrineRetryBundle\Event\TransactionFailedEvent;
 use DualMedia\DoctrineRetryBundle\Event\TransactionFinishedEvent;
-use Psr\EventDispatcher\EventDispatcherInterface;
 use Psr\Log\LoggerInterface;
+use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 /**
  * This service allows for easy retryable database transactions.
