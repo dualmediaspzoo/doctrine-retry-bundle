@@ -5,9 +5,9 @@ namespace DualMedia\DoctrineRetryBundle;
 use Doctrine\DBAL\Exception\RetryableException;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\Persistence\ManagerRegistry;
-use DualMedia\DoctrineRetryBundle\Event\RetryEvent;
 use DualMedia\DoctrineRetryBundle\Event\TransactionFailedEvent;
-use DualMedia\DoctrineRetryBundle\Event\TransactionFinishedEvent;
+use DualMedia\DoctrineRetryBundle\Event\TransactionFinalizedEvent;
+use DualMedia\DoctrineRetryBundle\Event\TransactionRetryingEvent;
 use Psr\Log\LoggerInterface;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
@@ -75,14 +75,14 @@ class Retrier
 
                 $retries++;
                 $rollback = false;
-                $this->eventDispatcher->dispatch(new RetryEvent($e, $retries));
+                $this->eventDispatcher->dispatch(new TransactionRetryingEvent($e, $retries, $em));
 
                 usleep($retries * $sleepMilliseconds * 1000);
             } catch (\Exception $e) {
                 $this->logger?->error('[Retrier] An exception has occurred', ['exception' => $e]);
                 self::$nesting--;
 
-                $this->eventDispatcher->dispatch(new TransactionFailedEvent($retries));
+                $this->eventDispatcher->dispatch(new TransactionFailedEvent($e, $retries, $em));
 
                 throw $e;
             } finally {
@@ -96,13 +96,13 @@ class Retrier
                     }
                 }
 
-                $this->eventDispatcher->dispatch(new TransactionFinishedEvent($retries));
+                $this->eventDispatcher->dispatch(new TransactionFinalizedEvent($retries));
             }
         } while ($retries < 10);
 
         self::$nesting--;
 
-        $this->eventDispatcher->dispatch(new TransactionFailedEvent($retries));
+        $this->eventDispatcher->dispatch(new TransactionFailedEvent($e, $retries));
 
         throw $e;
     }
