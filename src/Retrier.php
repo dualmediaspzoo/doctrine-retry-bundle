@@ -102,8 +102,6 @@ class Retrier
 
         self::$nesting--;
 
-        $this->eventDispatcher->dispatch(new TransactionFailedEvent($e, $retries));
-
         throw $e;
     }
 }
