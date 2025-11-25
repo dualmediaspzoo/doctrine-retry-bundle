@@ -7,7 +7,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\Persistence\ManagerRegistry;
 use DualMedia\DoctrineRetryBundle\Event\TransactionFailedEvent;
 use DualMedia\DoctrineRetryBundle\Event\TransactionFinalizedEvent;
-use DualMedia\DoctrineRetryBundle\Event\TransactionRetryingEvent;
+use DualMedia\DoctrineRetryBundle\Event\TransactionRetryEvent;
 use Psr\Log\LoggerInterface;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
@@ -69,13 +69,13 @@ class Retrier
 
                 return $ret;
             } catch (RetryableException $e) {
+                $this->eventDispatcher->dispatch(new TransactionRetryEvent($e, $retries, $em));
                 $em->rollback();
                 $em->close();
                 $this->registry->resetManager();
 
                 $retries++;
                 $rollback = false;
-                $this->eventDispatcher->dispatch(new TransactionRetryingEvent($e, $retries, $em));
 
                 usleep($retries * $sleepMilliseconds * 1000);
             } catch (\Exception $e) {
@@ -86,6 +86,8 @@ class Retrier
 
                 throw $e;
             } finally {
+                $this->eventDispatcher->dispatch(new TransactionFinalizedEvent($rollback, $retries, $em));
+
                 if ($rollback) {
                     $em->close();
 
@@ -95,8 +97,6 @@ class Retrier
                         $connection->rollback();
                     }
                 }
-
-                $this->eventDispatcher->dispatch(new TransactionFinalizedEvent($retries));
             }
         } while ($retries < 10);
 
