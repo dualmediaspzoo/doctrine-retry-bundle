@@ -5,7 +5,11 @@ namespace DualMedia\DoctrineRetryBundle;
 use Doctrine\DBAL\Exception\RetryableException;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\Persistence\ManagerRegistry;
+use DualMedia\DoctrineRetryBundle\Event\TransactionFailedEvent;
+use DualMedia\DoctrineRetryBundle\Event\TransactionFinalizedEvent;
+use DualMedia\DoctrineRetryBundle\Event\TransactionRetryEvent;
 use Psr\Log\LoggerInterface;
+use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 /**
  * This service allows for easy retryable database transactions.
@@ -18,6 +22,7 @@ class Retrier
 
     public function __construct(
         private readonly ManagerRegistry $registry,
+        private readonly EventDispatcherInterface $eventDispatcher,
         private readonly LoggerInterface|null $logger = null,
         private readonly bool $trackNesting = false
     ) {
@@ -44,6 +49,7 @@ class Retrier
 
         $storage = new Storage();
         $retries = 0;
+        $success = false;
 
         do {
             /** @var EntityManagerInterface $em */
@@ -61,9 +67,11 @@ class Retrier
                 self::$nesting--;
 
                 $rollback = false;
+                $success = true;
 
                 return $ret;
             } catch (RetryableException $e) {
+                $this->eventDispatcher->dispatch(new TransactionRetryEvent($e, $retries, $em));
                 $em->rollback();
                 $em->close();
                 $this->registry->resetManager();
@@ -76,8 +84,12 @@ class Retrier
                 $this->logger?->error('[Retrier] An exception has occurred', ['exception' => $e]);
                 self::$nesting--;
 
+                $this->eventDispatcher->dispatch(new TransactionFailedEvent($e, $retries, $em));
+
                 throw $e;
             } finally {
+                $this->eventDispatcher->dispatch(new TransactionFinalizedEvent($success, $rollback, $retries, $em));
+
                 if ($rollback) {
                     $em->close();
 
