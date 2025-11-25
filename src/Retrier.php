@@ -8,6 +8,7 @@ use Doctrine\Persistence\ManagerRegistry;
 use DualMedia\DoctrineRetryBundle\Event\TransactionFailedEvent;
 use DualMedia\DoctrineRetryBundle\Event\TransactionFinalizedEvent;
 use DualMedia\DoctrineRetryBundle\Event\TransactionRetryEvent;
+use DualMedia\DoctrineRetryBundle\Event\TransactionStartEvent;
 use Psr\Log\LoggerInterface;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
@@ -50,6 +51,8 @@ class Retrier
         $storage = new Storage();
         $retries = 0;
         $success = false;
+
+        $this->eventDispatcher->dispatch(new TransactionStartEvent());
 
         do {
             /** @var EntityManagerInterface $em */
