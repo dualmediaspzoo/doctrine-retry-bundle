@@ -35,6 +35,9 @@ class Retrier
      * @param callable(EntityManagerInterface, Storage): T $callback
      *
      * @return T
+     *
+     * @throws RetryableException
+     * @throws \Throwable
      */
     public function execute(
         callable $callback,
